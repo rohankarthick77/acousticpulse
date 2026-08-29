@@ -3,7 +3,23 @@
 
 > *"Listen to the City. Understand the Noise. Improve the Future."*
 
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://github.com/codespaces/new?repo=rohankarthick77/acousticpulse)
+[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/rohankarthick77/acousticpulse)
+
 AcousticPulse is a smart-city environmental command-center web application that monitors, analyzes, and mitigates urban noise pollution. It combines real-time simulated telemetry, GIS spatial heat mapping, automated citizen grievance lifecycle workflows, predictive policy mitigation sandboxes, and diurnal acoustic pattern intelligence.
+
+---
+
+## ⚡ 1-Click Instant Cloud Run (No Local Installation Needed)
+
+You can run and test the complete platform directly in your browser without installing anything locally:
+
+1. **[Launch via GitHub Codespaces](https://github.com/codespaces/new?repo=rohankarthick77/acousticpulse)**
+   - Click the link above and click **"Create codespace"**.
+   - It will automatically build the environment, seed the smart city database, and launch the web app with a live preview.
+
+2. **[Launch via Gitpod](https://gitpod.io/#https://github.com/rohankarthick77/acousticpulse)**
+   - Click the link above to spin up a live cloud workspace with one click.
 
 ---
 
@@ -53,7 +69,7 @@ AcousticPulse is a smart-city environmental command-center web application that 
 | **Frontend** | React 19, Vite, React Router v6, Chart.js, react-chartjs-2, Leaflet, React-Leaflet, Lucide Icons, CSS Variables & Glassmorphism |
 | **Backend** | Node.js, Express, REST APIs, JSON Web Tokens (JWT), BcryptJS |
 | **Database & ORM** | SQLite, Prisma ORM v6 |
-| **Tooling & Dev** | Concurrently, Nodemon, ESLint |
+| **Tooling & Dev** | Concurrently, Nodemon, DevContainers |
 
 ---
 
@@ -69,7 +85,7 @@ The platform features role-based access control (RBAC). The landing page also co
 
 ---
 
-## 🚀 Quick Start Guide
+## 🚀 Local Quick Start Guide
 
 ### Prerequisites
 - [Node.js](https://nodejs.org/) (v18 or higher recommended)
@@ -77,30 +93,17 @@ The platform features role-based access control (RBAC). The landing page also co
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/<YOUR_USERNAME>/<YOUR_REPOSITORY>.git
-cd <YOUR_REPOSITORY>
+git clone https://github.com/rohankarthick77/acousticpulse.git
+cd acousticpulse
 ```
 
-### 2. Install Dependencies
+### 2. Automated Setup
 ```bash
-# Install root, backend, and frontend dependencies
-npm run install:all
-npm install
+# Installs dependencies, sets up Prisma SQLite DB, and seeds smart city data
+npm run setup
 ```
 
-### 3. Initialize & Seed Database
-```bash
-cd server
-# Generate Prisma Client & push schema
-npx prisma generate
-npx prisma db push
-
-# Seed 12 monitoring stations, 1,740+ temporal readings, complaints, and demo accounts
-npm run seed
-cd ..
-```
-
-### 4. Run Development Server
+### 3. Run Development Server
 ```bash
 # Runs backend on port 5001 and frontend on port 3000 concurrently
 npm run dev
@@ -113,6 +116,7 @@ Open **`http://localhost:3000`** in your browser.
 ## 📁 Project Architecture
 
 ```
+├── .devcontainer/              # GitHub Codespaces 1-click cloud configuration
 ├── client/                     # React 19 Frontend
 │   ├── src/
 │   │   ├── components/         # Reusable UI, Layout, & Map components
@@ -153,18 +157,6 @@ Run the automated backend test suite:
 cd server
 node test-api.js
 ```
-
-**Verification Results:**
-- ✅ Health check endpoint
-- ✅ Admin & Authority Authentication
-- ✅ 12 Smart Monitoring Stations
-- ✅ Urban Noise Health Score Algorithm
-- ✅ 24h Diurnal Trend Data
-- ✅ Citizen Complaint Registration & Tracking ID
-- ✅ Authority Status Mutation & Before/After Decibel Verification
-- ✅ Anomaly Alert Stream & Resolution
-- ✅ Policy Mitigation Sandbox Recalculation
-- ✅ Dynamic Report Generation
 
 ---
 

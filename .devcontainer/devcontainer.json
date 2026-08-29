@@ -1,0 +1,27 @@
+{
+  "name": "AcousticPulse Smart City Platform",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:1-20-bullseye",
+  "forwardPorts": [3000, 5001],
+  "portsAttributes": {
+    "3000": {
+      "label": "AcousticPulse Frontend",
+      "onAutoForward": "openPreview",
+      "visibility": "public"
+    },
+    "5001": {
+      "label": "AcousticPulse REST API",
+      "onAutoForward": "silent",
+      "visibility": "public"
+    }
+  },
+  "postCreateCommand": "npm install && npm run install:all && cd server && npx prisma generate && npx prisma db push && npm run seed && cd ..",
+  "postAttachCommand": "npm run dev",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "Prisma.prisma"
+      ]
+    }
+  }
+}
