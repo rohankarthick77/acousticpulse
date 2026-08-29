@@ -1,0 +1,168 @@
+// Prisma Schema for AcousticPulse
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id            String          @id @default(uuid())
+  email         String          @unique
+  passwordHash  String
+  name          String
+  role          String          @default("CITIZEN") // "ADMIN", "AUTHORITY", "CITIZEN"
+  department    String?
+  badgeNumber   String?
+  phone         String?
+  avatar        String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  complaints    NoiseComplaint[] @relation("CitizenComplaints")
+  assignedJobs  NoiseComplaint[] @relation("AssignedOfficer")
+  timelineNotes ComplaintTimeline[]
+  notifications Notification[]
+}
+
+model MonitoringStation {
+  id                String         @id @default(uuid())
+  stationCode       String         @unique
+  name              String
+  zoneType          String         @default("COMMERCIAL") // "RESIDENTIAL", "COMMERCIAL", "INDUSTRIAL", "SILENCE_ZONE"
+  latitude          Float
+  longitude         Float
+  status            String         @default("ONLINE") // "ONLINE", "OFFLINE", "MAINTENANCE"
+  dayThresholdDba   Float          @default(65.0)
+  nightThresholdDba Float          @default(55.0)
+  installationDate  DateTime       @default(now())
+  address           String
+  description       String?
+  lastReadingDba    Float          @default(0.0)
+  lastUpdated       DateTime       @default(now())
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  readings          NoiseReading[]
+  alerts            NoiseAlert[]
+}
+
+model NoiseReading {
+  id              String            @id @default(uuid())
+  stationId       String
+  station         MonitoringStation @relation(fields: [stationId], references: [id], onDelete: Cascade)
+  dba             Float
+  peakDba         Float
+  minDba          Float
+  frequencyBandHz Int?              @default(1000)
+  isViolation     Boolean           @default(false)
+  recordedAt      DateTime          @default(now())
+
+  @@index([stationId, recordedAt])
+  @@index([recordedAt])
+}
+
+model NoiseComplaint {
+  id               String               @id @default(uuid())
+  trackingId       String               @unique // e.g. "AP-2026-00124"
+  citizenId        String?
+  citizen          User?                @relation("CitizenComplaints", fields: [citizenId], references: [id], onDelete: SetNull)
+  citizenName      String?
+  citizenEmail     String?
+  citizenPhone     String?
+  title            String
+  sourceCategory   String               // "TRAFFIC", "CONSTRUCTION", "LOUDSPEAKER", "INDUSTRIAL", "COMMERCIAL", "RESIDENTIAL", "EVENT", "OTHER"
+  locationAddress  String
+  latitude         Float?
+  longitude        Float?
+  severity         String               @default("MODERATE") // "LOW", "MODERATE", "HIGH", "CRITICAL"
+  description      String
+  evidenceUrl      String?
+  audioSampleUrl   String?
+  status           String               @default("SUBMITTED") // "SUBMITTED", "UNDER_REVIEW", "VERIFIED", "ASSIGNED", "IN_PROGRESS", "RESOLVED", "CLOSED", "REJECTED"
+  assignedOfficerId String?
+  assignedOfficer  User?                @relation("AssignedOfficer", fields: [assignedOfficerId], references: [id], onDelete: SetNull)
+  resolutionNotes  String?
+  resolvedAt       DateTime?
+  beforeDba        Float?
+  afterDba         Float?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  timeline         ComplaintTimeline[]
+}
+
+model ComplaintTimeline {
+  id          String         @id @default(uuid())
+  complaintId String
+  complaint   NoiseComplaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  authorId    String?
+  author      User?          @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  fromStatus  String
+  toStatus    String
+  actionNote  String
+  createdAt   DateTime       @default(now())
+}
+
+model NoiseAlert {
+  id              String             @id @default(uuid())
+  stationId       String?
+  station         MonitoringStation? @relation(fields: [stationId], references: [id], onDelete: SetNull)
+  severity        String             @default("WARNING") // "INFO", "WARNING", "HIGH", "CRITICAL"
+  alertType       String             // "THRESHOLD_BREACH", "PROLONGED_EXPOSURE", "ACOUSTIC_SPIKE", "STATION_OFFLINE", "CLUSTER_COMPLAINTS"
+  message         String
+  location        String
+  dba             Float?
+  durationMinutes Int?               @default(5)
+  isResolved      Boolean            @default(false)
+  resolvedAt      DateTime?
+  createdAt       DateTime           @default(now())
+}
+
+model AcousticProfile {
+  id                String   @id @default(uuid())
+  name              String
+  category          String   @unique // "QUIET_ZONE", "RESIDENTIAL", "MODERATE_URBAN", "HIGH_NOISE", "CRITICAL_NOISE"
+  lowerDba          Float
+  upperDba          Float
+  description       String
+  healthRisk        String
+  recommendedAction String
+  colorHex          String
+}
+
+model Recommendation {
+  id                    String   @id @default(uuid())
+  title                 String
+  category              String   // "QUIET_HOURS", "TRAFFIC_MANAGEMENT", "ACOUSTIC_BARRIERS", "ZONING_BUFFER"
+  impactEstimate        String
+  targetArea            String
+  recommendedTimeWindow String?
+  expectedReductionDba  Float
+  confidenceScore       Float    @default(90.0)
+  description           String
+  isImplemented         Boolean  @default(false)
+  createdAt             DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String   @default("INFO") // "INFO", "WARNING", "CRITICAL", "COMPLAINT", "STATION"
+  read      Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+}
+
+model SystemSetting {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt
+}
