@@ -27,8 +27,8 @@ export const NoiseMapPage = () => {
   const [selectedStation, setSelectedStation] = useState(null);
   const [selectedZoneFilter, setSelectedZoneFilter] = useState('ALL');
   const [showHeatCircles, setShowHeatCircles] = useState(true);
-  const [mapCenter, setMapCenter] = useState([13.045, 80.235]);
-  const [mapZoom, setMapZoom] = useState(12);
+  const [mapCenter, setMapCenter] = useState([11.5034, 77.2444]);
+  const [mapZoom, setMapZoom] = useState(13);
 
   const toast = useToast();
   const navigate = useNavigate();

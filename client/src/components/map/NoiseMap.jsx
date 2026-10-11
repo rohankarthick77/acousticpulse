@@ -4,22 +4,34 @@ import L from 'leaflet';
 import { useTheme } from '../../context/ThemeContext.jsx';
 import { NoiseBadge } from '../common/NoiseBadge.jsx';
 import { StatusBadge } from '../common/StatusBadge.jsx';
-import { Radio, Volume2, ShieldAlert, Eye, Maximize2 } from 'lucide-react';
+import { Radio, Volume2, ShieldAlert, Eye, Maximize2, Layers } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 // Center map controller
 function SetMapCenter({ center, zoom }) {
   const map = useMap();
   useEffect(() => {
-    if (center) {
-      map.setView(center, zoom || 12);
+    if (center && Array.isArray(center) && center.length === 2) {
+      map.setView(center, zoom || 13);
     }
   }, [center, zoom, map]);
   return null;
 }
 
+// Invalidate size on mount to ensure tiles render immediately
+function MapResizer() {
+  const map = useMap();
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [map]);
+  return null;
+}
+
 // Create custom SVG marker pins
-function createCustomMarker(dba, isViolating, isPulsing) {
+function createCustomMarker(dba, isViolating) {
   let color = '#10b981'; // safe
   if (dba >= 80) color = '#ef4444'; // critical
   else if (dba >= 70) color = '#f97316'; // high
@@ -71,24 +83,53 @@ function createCustomMarker(dba, isViolating, isPulsing) {
   });
 }
 
+// Available free tile layers with zero API keys required
+const TILE_PROVIDERS = {
+  carto_dark: {
+    name: 'Dark Cyberpunk',
+    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    attribution: '&copy; <a href="https://carto.com/">CARTO</a> &copy; OpenStreetMap'
+  },
+  carto_voyager: {
+    name: 'Carto Clean Light',
+    url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+    attribution: '&copy; <a href="https://carto.com/">CARTO</a> &copy; OpenStreetMap'
+  },
+  arcgis_streets: {
+    name: 'ArcGIS Streets',
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+    attribution: '&copy; Esri &copy; OpenStreetMap'
+  },
+  arcgis_dark: {
+    name: 'ArcGIS Dark Canvas',
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+    attribution: '&copy; Esri &copy; OpenStreetMap'
+  },
+  osm_standard: {
+    name: 'OpenStreetMap FR',
+    url: 'https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png',
+    attribution: '&copy; OpenStreetMap contributors'
+  }
+};
+
 export const NoiseMap = ({
   stations = [],
   selectedStation = null,
   onSelectStation = null,
   showHeatCircles = true,
   height = '560px',
-  center = [13.045, 80.235],
-  zoom = 12
+  center = [11.5034, 77.2444], // Sathyamangalam coordinates
+  zoom = 13
 }) => {
   const { isDark } = useTheme();
   const navigate = useNavigate();
+  const [selectedLayerKey, setSelectedLayerKey] = useState(isDark ? 'carto_dark' : 'carto_voyager');
 
-  // Dark/Light tile layer URL
-  const tileUrl = isDark
-    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-    : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+  useEffect(() => {
+    setSelectedLayerKey(isDark ? 'carto_dark' : 'carto_voyager');
+  }, [isDark]);
 
-  const attribution = '&copy; <a href="https://carto.com/">CARTO</a> | AcousticPulse GIS Engine';
+  const activeTile = TILE_PROVIDERS[selectedLayerKey] || (isDark ? TILE_PROVIDERS.carto_dark : TILE_PROVIDERS.carto_voyager);
 
   return (
     <div
@@ -109,14 +150,60 @@ export const NoiseMap = ({
         }
       `}</style>
 
+      {/* Layer Switcher Pill */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '12px',
+          right: '12px',
+          zIndex: 1000,
+          background: 'rgba(15, 23, 42, 0.85)',
+          backdropFilter: 'blur(10px)',
+          border: '1px solid rgba(255, 255, 255, 0.15)',
+          borderRadius: '8px',
+          padding: '4px 8px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          fontSize: '0.75rem',
+          color: '#e2e8f0'
+        }}
+      >
+        <Layers size={13} style={{ color: 'var(--accent-cyan)' }} />
+        <select
+          value={selectedLayerKey}
+          onChange={(e) => setSelectedLayerKey(e.target.value)}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: '#e2e8f0',
+            fontSize: '0.75rem',
+            outline: 'none',
+            cursor: 'pointer'
+          }}
+        >
+          <option value="carto_dark" style={{ background: '#0f172a' }}>Carto Dark (Default)</option>
+          <option value="carto_voyager" style={{ background: '#0f172a' }}>Carto Voyager Light</option>
+          <option value="arcgis_dark" style={{ background: '#0f172a' }}>ArcGIS Dark Canvas</option>
+          <option value="arcgis_streets" style={{ background: '#0f172a' }}>ArcGIS Street Map</option>
+          <option value="osm_standard" style={{ background: '#0f172a' }}>OpenStreetMap</option>
+        </select>
+      </div>
+
       <MapContainer
         center={center}
         zoom={zoom}
         style={{ height: '100%', width: '100%' }}
         scrollWheelZoom={true}
       >
-        <TileLayer url={tileUrl} attribution={attribution} />
+        <TileLayer
+          key={activeTile.url}
+          url={activeTile.url}
+          attribution={activeTile.attribution}
+          maxZoom={19}
+        />
         <SetMapCenter center={center} zoom={zoom} />
+        <MapResizer />
 
         {stations.map(st => {
           const dba = st.lastReadingDba || st.currentDba || 50;
@@ -131,11 +218,11 @@ export const NoiseMap = ({
               {showHeatCircles && (
                 <Circle
                   center={[st.latitude, st.longitude]}
-                  radius={dba * 14}
+                  radius={dba * 8}
                   pathOptions={{
                     color: circleColor,
                     fillColor: circleColor,
-                    fillOpacity: 0.18,
+                    fillOpacity: 0.22,
                     weight: 1.5,
                     dashArray: dba > (st.dayThresholdDba || 65) ? '4, 4' : null
                   }}
